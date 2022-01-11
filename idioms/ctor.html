@@ -169,30 +169,117 @@
                     <main>
                         <h1><a class="header" href="#构造器" id="构造器">构造器</a></h1>
 <h2><a class="header" href="#说明" id="说明">说明</a></h2>
-<p>Rust 没有语言层面的构造器。取而代之的是常用一个静态的<code>new</code>方法创建一个对象作为构造器。</p>
-<h2><a class="header" href="#例子" id="例子">例子</a></h2>
+<p>Rust 没有语言层面的构造器。
+取而代之的是常用一个[关联函数][] <code>new</code> 创建对象：</p>
+<h2><a class="header" href="#示例" id="示例">示例</a></h2>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Time in seconds.
+///
+/// # Example
+///
+/// ```
+/// let s = Second::new(42);
+/// assert_eq!(42, s.value());
+/// ```
+pub struct Second {
+    value: u64
+}
+impl Second {
+    // Constructs a new instance of [`Second`].
+    // Note this is an associated function - no self.
+    pub fn new(value: u64) -&gt; Self {
+        Self { value }
+    }
+    /// Returns the value in seconds.
+    pub fn value(&amp;self) -&gt; u64 {
+        self.value
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h2><a class="header" href="#default-constructors" id="default-constructors">Default Constructors</a></h2>
+<p>Rust supports default constructors with the <a href="https://doc.rust-lang.org/stable/std/default/trait.Default.html"><code>Default</code></a> trait:</p>
 <pre><code class="language-rust ignore">// A Rust vector, see liballoc/vec.rs
 pub struct Vec&lt;T&gt; {
     buf: RawVec&lt;T&gt;,
     len: usize,
+```rust
+/// Time in seconds.
+///
+/// # Example
+///
+/// ```
+/// let s = Second::default();
+/// assert_eq!(0, s.value());
+/// ```
+pub struct Second {
+    value: u64
 }
-
+impl Second {
+    /// Returns the value in seconds.
+    pub fn value(&amp;self) -&gt; u64 {
+        self.value
+    }
+}
 impl&lt;T&gt; Vec&lt;T&gt; {
-    // 构造一个新的 `Vec&lt;T&gt;`.
-    // 注意这是一个静态方法
-    // 这个构造器不需要任何参数，但有些需要参数来初始化对象
+    // Constructs a new, empty `Vec&lt;T&gt;`.
+    // Note this is a static method - no self.
+    // This constructor doesn't take any arguments, but some might in order to
+    // properly initialise an object
     pub fn new() -&gt; Vec&lt;T&gt; {
         // Create a new Vec with fields properly initialised.
         Vec {
-            // 注意我们这里调用的是RawVec类型的构造器
+            // Note that here we are calling RawVec's constructor.
             buf: RawVec::new(),
             len: 0,
         }
+impl Default for Second {
+    fn default() -&gt; Self {
+        Self { value: 0 }
     }
 }
 </code></pre>
+<p><code>Default</code> can also be derived if all types of all fields implement <code>Default</code>,
+like they do with <code>Second</code>:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Time in seconds.
+///
+/// # Example
+///
+/// ```
+/// let s = Second::default();
+/// assert_eq!(0, s.value());
+/// ```
+#[derive(Default)]
+pub struct Second {
+    value: u64
+}
+impl Second {
+    /// Returns the value in seconds.
+    pub fn value(&amp;self) -&gt; u64 {
+        self.value
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p><strong>Note:</strong> When implementing <code>Default</code> for a type, it is neither required nor
+recommended to also provide an associated function <code>new</code> without arguments.</p>
+<p><strong>Hint:</strong> The advantage of implementing or deriving <code>Default</code> is that your type
+can now be used where a <code>Default</code> implementation is required, most prominently,
+any of the <a href="https://doc.rust-lang.org/stable/std/?search=or_default"><code>*or_default</code> functions in the standard library</a>.</p>
 <h2><a class="header" href="#参阅" id="参阅">参阅</a></h2>
+<ul>
+<li>
+<p><a href="default.html">default idiom</a>有对<code>Default</code> trait更深入的介绍。</p>
+</li>
+<li>
 <p><a href="../patterns/creational/builder.html">生成器模式</a>用于有多种构造对象方式的情况。</p>
+</li>
+</ul>
 
                     </main>
 

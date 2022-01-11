@@ -314,30 +314,117 @@ by Herman J. Radtke III</li>
 <p>它通常不是最有效的连接字符串的方法。对一个可变的<code>String</code>类型对象进行一连串的<code>push</code>操作通常是最有效率的（尤其这个字符串已经预先分配了足够的空间）</p>
 <h1><a class="header" href="#构造器" id="构造器">构造器</a></h1>
 <h2><a class="header" href="#说明-2" id="说明-2">说明</a></h2>
-<p>Rust 没有语言层面的构造器。取而代之的是常用一个静态的<code>new</code>方法创建一个对象作为构造器。</p>
-<h2><a class="header" href="#例子-2" id="例子-2">例子</a></h2>
+<p>Rust 没有语言层面的构造器。
+取而代之的是常用一个[关联函数][] <code>new</code> 创建对象：</p>
+<h2><a class="header" href="#示例" id="示例">示例</a></h2>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Time in seconds.
+///
+/// # Example
+///
+/// ```
+/// let s = Second::new(42);
+/// assert_eq!(42, s.value());
+/// ```
+pub struct Second {
+    value: u64
+}
+impl Second {
+    // Constructs a new instance of [`Second`].
+    // Note this is an associated function - no self.
+    pub fn new(value: u64) -&gt; Self {
+        Self { value }
+    }
+    /// Returns the value in seconds.
+    pub fn value(&amp;self) -&gt; u64 {
+        self.value
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h2><a class="header" href="#default-constructors" id="default-constructors">Default Constructors</a></h2>
+<p>Rust supports default constructors with the <a href="https://doc.rust-lang.org/stable/std/default/trait.Default.html"><code>Default</code></a> trait:</p>
 <pre><code class="language-rust ignore">// A Rust vector, see liballoc/vec.rs
 pub struct Vec&lt;T&gt; {
     buf: RawVec&lt;T&gt;,
     len: usize,
+```rust
+/// Time in seconds.
+///
+/// # Example
+///
+/// ```
+/// let s = Second::default();
+/// assert_eq!(0, s.value());
+/// ```
+pub struct Second {
+    value: u64
 }
-
+impl Second {
+    /// Returns the value in seconds.
+    pub fn value(&amp;self) -&gt; u64 {
+        self.value
+    }
+}
 impl&lt;T&gt; Vec&lt;T&gt; {
-    // 构造一个新的 `Vec&lt;T&gt;`.
-    // 注意这是一个静态方法
-    // 这个构造器不需要任何参数，但有些需要参数来初始化对象
+    // Constructs a new, empty `Vec&lt;T&gt;`.
+    // Note this is a static method - no self.
+    // This constructor doesn't take any arguments, but some might in order to
+    // properly initialise an object
     pub fn new() -&gt; Vec&lt;T&gt; {
         // Create a new Vec with fields properly initialised.
         Vec {
-            // 注意我们这里调用的是RawVec类型的构造器
+            // Note that here we are calling RawVec's constructor.
             buf: RawVec::new(),
             len: 0,
         }
+impl Default for Second {
+    fn default() -&gt; Self {
+        Self { value: 0 }
     }
 }
 </code></pre>
+<p><code>Default</code> can also be derived if all types of all fields implement <code>Default</code>,
+like they do with <code>Second</code>:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Time in seconds.
+///
+/// # Example
+///
+/// ```
+/// let s = Second::default();
+/// assert_eq!(0, s.value());
+/// ```
+#[derive(Default)]
+pub struct Second {
+    value: u64
+}
+impl Second {
+    /// Returns the value in seconds.
+    pub fn value(&amp;self) -&gt; u64 {
+        self.value
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p><strong>Note:</strong> When implementing <code>Default</code> for a type, it is neither required nor
+recommended to also provide an associated function <code>new</code> without arguments.</p>
+<p><strong>Hint:</strong> The advantage of implementing or deriving <code>Default</code> is that your type
+can now be used where a <code>Default</code> implementation is required, most prominently,
+any of the <a href="https://doc.rust-lang.org/stable/std/?search=or_default"><code>*or_default</code> functions in the standard library</a>.</p>
 <h2><a class="header" href="#参阅-1" id="参阅-1">参阅</a></h2>
+<ul>
+<li>
+<p><a href="idioms/default.html">default idiom</a>有对<code>Default</code> trait更深入的介绍。</p>
+</li>
+<li>
 <p><a href="idioms/../patterns/creational/builder.html">生成器模式</a>用于有多种构造对象方式的情况。</p>
+</li>
+</ul>
 <h1><a class="header" href="#default-特性" id="default-特性"><code>Default</code> 特性</a></h1>
 <h2><a class="header" href="#说明-3" id="说明-3">说明</a></h2>
 <p>许多Rust中的类型有一个构造器。然而，构造器是针对特定类型的。Rust不能抽象出一个代表所有带有<code>new()</code>方法的东西。为了实现这个想法，
@@ -345,7 +432,7 @@ impl&lt;T&gt; Vec&lt;T&gt; {
 <p>单例容器如 <code>Cow</code>, <code>Box</code> 和 <code>Arc</code>为<code>Default</code>类型实现了<code>Default</code>，
 并且可以自动地对每个成员都实现<code>Default</code>的结构体支持<code>#[derive(Default)]</code>。所以越多的类型支持 <code>Default</code>，它就会越有用。</p>
 <p>另一方面，构造器能够接受多个参数，而<code>default()</code>方法不能。你甚至可以定义多个不同的函数做多个构造器，但是你最多只能为一个类型实现一种<code>Default</code>的实现。</p>
-<h2><a class="header" href="#例子-3" id="例子-3">例子</a></h2>
+<h2><a class="header" href="#例子-2" id="例子-2">例子</a></h2>
 <pre><pre class="playground"><code class="language-rust edition2018">use std::{path::PathBuf, time::Duration};
 
 // 注意我们可以用自动导出 Default.
@@ -384,7 +471,7 @@ not be &quot;default&quot;</li>
 <h1><a class="header" href="#将集合视为智能指针" id="将集合视为智能指针">将集合视为智能指针</a></h1>
 <h2><a class="header" href="#说明-4" id="说明-4">说明</a></h2>
 <p>使用集合的<code>Deref</code>特性使其像智能指针一样，提供数据的借用或者所有权。</p>
-<h2><a class="header" href="#例子-4" id="例子-4">例子</a></h2>
+<h2><a class="header" href="#例子-3" id="例子-3">例子</a></h2>
 <pre><code class="language-rust ignore">use std::ops::Deref;
 
 struct Vec&lt;T&gt; {
@@ -468,7 +555,7 @@ Rust对每个栈帧中的每个对象执行析构器代码。所以析构器即�
 <p>假设我们有一个至少有两种变体的枚举<code>&amp;mut MyEnum</code>，一种是<code>A { name: String, x: u8 }</code>，
 另一种是<code>B { name: String }</code>。现在我们想要当x=0时，将A变为B，同时变量除变体类型变化外其他不变。</p>
 <p>我们可以不用克隆<code>name</code>变体即可实现上述操作。</p>
-<h2><a class="header" href="#例子-5" id="例子-5">例子</a></h2>
+<h2><a class="header" href="#例子-4" id="例子-4">例子</a></h2>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -544,7 +631,7 @@ fn swizzle(e: &amp;mut MultiVariateEnum) {
 <h1><a class="header" href="#栈上动态分发" id="栈上动态分发">栈上动态分发</a></h1>
 <h2><a class="header" href="#说明-7" id="说明-7">说明</a></h2>
 <p>我们可以动态分发多个值，然而为了实现此功能，需要声明多个变量来绑定不同类型的对象。我们可以使用延迟条件初始化（deferred conditional initialization）来扩展生命周期，如下所示：</p>
-<h2><a class="header" href="#例子-6" id="例子-6">例子</a></h2>
+<h2><a class="header" href="#例子-5" id="例子-5">例子</a></h2>
 <pre><pre class="playground"><code class="language-rust edition2018">use std::io;
 use std::fs;
 
@@ -897,7 +984,7 @@ impl From&lt;ParseError&gt; for parse_error {
 <h1><a class="header" href="#关于-option的迭代器" id="关于-option的迭代器">关于 <code>Option</code>的迭代器</a></h1>
 <h2><a class="header" href="#说明-11" id="说明-11">说明</a></h2>
 <p><code>Option</code>可以被视为一个包含一个0个或者1个元素的容器。特别是它实现了<code>IntoIterator</code>特性，这样我们就可以用来写泛型代码。</p>
-<h2><a class="header" href="#示例" id="示例">示例</a></h2>
+<h2><a class="header" href="#示例-1" id="示例-1">示例</a></h2>
 <p>因为<code>Option</code>实现了<code>IntoIterator</code>特性，它就可以用来当<a href="https://doc.rust-lang.org/std/iter/trait.Extend.html#tymethod.extend"><code>.extend()</code></a>的参数:</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
@@ -947,7 +1034,7 @@ for logician in logicians.iter().chain(turing.iter()) {
 <h2><a class="header" href="#说明-12" id="说明-12">说明</a></h2>
 <p>默认情况下，闭包从环境中借用捕获。或者你可以用<code>move</code>闭包来将环境的所有权全给闭包。然而，一般情况下你是想传递一部分变量到闭包中，如一些数据的拷贝、传引用或者执行一些其他操作。</p>
 <p>这种情况应在不同的作用域里进行变量重绑定。</p>
-<h2><a class="header" href="#示例-1" id="示例-1">示例</a></h2>
+<h2><a class="header" href="#示例-2" id="示例-2">示例</a></h2>
 <p>像这样</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
@@ -989,33 +1076,121 @@ let closure = move || {
 <p>闭包能用与上下文相同的变量名来用那些复制或者move进来的变量。</p>
 <h2><a class="header" href="#缺点-8" id="缺点-8">缺点</a></h2>
 <p>增加了闭包内的实现代码行数。</p>
-<h1><a class="header" href="#留隐私为扩展" id="留隐私为扩展">留隐私，为扩展</a></h1>
+<h1><a class="header" href="#留隐私为拓展" id="留隐私为拓展">留隐私，为拓展</a></h1>
 <h2><a class="header" href="#说明-13" id="说明-13">说明</a></h2>
-<p>使用私有字段确保结构体日后可以在不破坏API稳定性的情况下进一步扩展。</p>
-<h2><a class="header" href="#示例-2" id="示例-2">示例</a></h2>
-<pre><code class="language-rust ignore">mod a {
-    // Public struct.
+<p>A small set of scenarios exist where a library author may want to add public
+fields to a public struct or new variants to an enum without breaking backwards
+compatibility.</p>
+<p>Rust offers two solutions to this problem:</p>
+<ul>
+<li>
+<p>Use <code>#[non_exhaustive]</code> on <code>struct</code>s, <code>enum</code>s, and <code>enum</code> variants.
+For extensive documentation on all the places where <code>#[non_exhaustive]</code> can be
+used, see <a href="https://doc.rust-lang.org/reference/attributes/type_system.html#the-non_exhaustive-attribute">the docs</a>.</p>
+</li>
+<li>
+<p>You may add a private field to a struct to prevent it from being directly
+instantiated or matched against (see Alternative)</p>
+</li>
+</ul>
+<h2><a class="header" href="#示例-3" id="示例-3">示例</a></h2>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>mod a {
+    // 公开结构体
+    #[non_exhaustive]
     pub struct S {
         pub foo: i32,
-        // Private field.
-        bar: i32,
+    }
+    
+    #[non_exhaustive]
+    pub enum AdmitMoreVariants {
+        VariantA,
+        VariantB,
+        #[non_exhaustive]
+        VariantC { a: String }
     }
 }
 
-fn main(s: a::S) {
-    // Because S::bar is private, it cannot be named here and we must use `..`
-    // in the pattern.
+fn print_matched_variants(s: a::S) {
+    // Because S is `#[non_exhaustive]`, it cannot be named here and
+    // we must use `..` in the pattern.
     let a::S { foo: _, ..} = s;
-}
+    
+    let some_enum = a::AdmitMoreVariants::VariantA;
+    match some_enum {
+        a::AdmitMoreVariants::VariantA =&gt; println!(&quot;it's an A&quot;),
+        a::AdmitMoreVariants::VariantB =&gt; println!(&quot;it's a b&quot;),
 
-</code></pre>
-<h2><a class="header" href="#讨论-4" id="讨论-4">讨论</a></h2>
-<p>向结构体中增加字段通常是保持向后兼容的。然而，如果调用者用模式匹配来解构这个结构体的实例，他可能对现有结构体内的所有公开字段进行修改，
-这样就破坏了我们的设计。或者调用者可以对一部分字段赋值，然后在模式里用<code>..</code>来自动增加其他可匹配的字段。
-使用私有字段至少强迫调用者必须用后一种方法，确保结构体是未来是可以扩展的。</p>
-<p>这种实现的缺点是你可能需要增加用不到的变量。你可以用<code>()</code>基类型来确保不增加运行时开销，<code>_</code>作为字段名可以避免没使用变量的编译器警告。</p>
-<p>如果Rust支持枚举的私有成员，我们就可以用相同的技巧来对一个枚举增加新的成员。
-但是不用通配符而是穷尽的模式匹配会导致未实现的问题。私有成员会强迫调用者在模式匹配是加上<code>_</code>通配符。这个问题的常规解决方法是加上<code>#[non_exhaustive]</code>属性。</p>
+        // .. required because this variant is non-exhaustive as well
+        a::AdmitMoreVariants::VariantC { a, .. } =&gt; println!(&quot;it's a c&quot;),
+
+        // The wildcard match is required because more variants may be
+        // added in the future
+        _ =&gt; println!(&quot;it's a new variant&quot;)
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h2><a class="header" href="#alternative-private-fields-for-structs" id="alternative-private-fields-for-structs">Alternative: <code>Private fields</code> for structs</a></h2>
+<p><code>#[non_exhaustive]</code> only works across crate boundaries.
+Within a crate, the private field method may be used.</p>
+<p>Adding a field to a struct is a mostly backwards compatible change.
+However, if a client uses a pattern to deconstruct a struct instance, they
+might name all the fields in the struct and adding a new one would break that
+pattern.
+The client could name some fields and use <code>..</code> in the pattern, in which case adding
+another field is backwards compatible.
+Making at least one of the struct's fields private forces clients to use the latter
+form of patterns, ensuring that the struct is future-proof.</p>
+<p>The downside of this approach is that you might need to add an otherwise unneeded
+field to the struct.
+You can use the <code>()</code> type so that there is no runtime overhead and prepend <code>_</code> to
+the field name to avoid the unused field warning.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct S {
+    pub a: i32,
+    // Because `b` is private, you cannot match on `S` without using `..` and `S`
+    //  cannot be directly instantiated or matched against
+    _b: ()
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h2><a class="header" href="#discussion" id="discussion">Discussion</a></h2>
+<p>On <code>struct</code>s, <code>#[non_exhaustive]</code> allows adding additional fields in a backwards
+compatible way.
+It will also prevent clients from using the struct constructor, even if all the
+fields are public.
+This may be helpful, but it's worth considering if you <em>want</em> an additional field
+to be found by clients as a compiler error rather than something that may be silently
+undiscovered.</p>
+<p><code>#[non_exhaustive]</code> can be applied to enum variants as well.
+A <code>#[non_exhaustive]</code> variant behaves in the same way as a <code>#[non_exhaustive]</code> struct.</p>
+<p>Use this deliberately and with caution: incrementing the major version when adding
+fields or variants is often a better option.
+<code>#[non_exhaustive]</code> may be appropriate in scenarios where you're modeling an external
+resource that may change out-of-sync with your library, but is not a general purpose
+tool.</p>
+<h3><a class="header" href="#disadvantages" id="disadvantages">Disadvantages</a></h3>
+<p><code>#[non_exhaustive]</code> can make your code much less ergonomic to use, especially when
+forced to handle unknown enum variants.
+It should only be used when these sorts of evolutions are required <strong>without</strong>
+incrementing the major version.</p>
+<p>When <code>#[non_exhaustive]</code> is applied to <code>enum</code>s, it forces clients to handle a
+wildcard variant.
+If there is no sensible action to take in this case, this may lead to awkward
+code and code paths that are only executed in extremely rare circumstances.
+If a client decides to <code>panic!()</code> in this scenario, it may have been better to
+expose this error at compile time.
+In fact, <code>#[non_exhaustive]</code> forces clients to handle the &quot;Something else&quot; case;
+there is rarely a sensible action to take in this scenario.</p>
+<h2><a class="header" href="#see-also" id="see-also">See also</a></h2>
+<ul>
+<li><a href="https://github.com/rust-lang/rfcs/blob/master/text/2008-non-exhaustive.md">RFC introducing #[non_exhaustive] attribute for enums and structs</a></li>
+</ul>
 <h1><a class="header" href="#关于初始化的文档" id="关于初始化的文档">关于初始化的文档</a></h1>
 <h2><a class="header" href="#说明-14" id="说明-14">说明</a></h2>
 <p>如果一个结构体初始化操作很复杂，当写文档的时候，可以在文档中写一个使用样例的函数。</p>
@@ -1049,7 +1224,7 @@ impl Connection {
     }
 }
 </code></pre>
-<h2><a class="header" href="#示例-3" id="示例-3">示例</a></h2>
+<h2><a class="header" href="#示例-4" id="示例-4">示例</a></h2>
 <p>不用每次都写初始化的部分，主要写一个以这个结构体为参数的函数的用法即可。</p>
 <pre><code class="language-rust ignore">struct Connection {
     name: String,
@@ -1076,14 +1251,14 @@ impl Connection {
 <p>这样更简洁。</p>
 <h2><a class="header" href="#缺点-9" id="缺点-9">缺点</a></h2>
 <p>作为例子的函数不会被真的测试。但是在<code>cargo test</code>的时候还是会检查能不能编译通过。所以这个模式是在需要<code>no_run</code>的时候更能彰显作用，这样写就不必用<code>no_run</code>。</p>
-<h2><a class="header" href="#讨论-5" id="讨论-5">讨论</a></h2>
+<h2><a class="header" href="#讨论-4" id="讨论-4">讨论</a></h2>
 <p>如果不需要断言，那么这种模式就可以很好地工作。</p>
 <p>如果需要，另一个方法是创建一个公开的方法来创建用<code>#[doc(hidden)]</code>注释的帮助示例（这样用户就看不见）。因为这是包里的公开API，所以在rustdoc里会显示这个方法。</p>
 <h1><a class="header" href="#临时可变性" id="临时可变性">临时可变性</a></h1>
 <h2><a class="header" href="#说明-15" id="说明-15">说明</a></h2>
 <p>有的时候我们需要准备和处理一些数据，当处理完之后就只会读取而不修改。这种情况可以变量重绑定将其改为不可变的。</p>
 <p>也可以在代码块里将处理过程和重定义写在一起。</p>
-<h2><a class="header" href="#示例-4" id="示例-4">示例</a></h2>
+<h2><a class="header" href="#示例-5" id="示例-5">示例</a></h2>
 <p>要求向量在使用前必须排序。</p>
 <p>用代码块:</p>
 <pre><code class="language-rust ignore">let data = {
@@ -1126,7 +1301,7 @@ let data = data;
 这些命令也可以作为某些事件的结果被触发。例如，当用户按下某个按钮，或某个数据包到达时。
 此外，这些命令应该可以撤销。这对于编辑器的操作可能很有用。我们可能想存储命令日志，
 这样，如果系统崩溃，我们可以在之后重新应用这些修改。</p>
-<h2><a class="header" href="#示例-5" id="示例-5">示例</a></h2>
+<h2><a class="header" href="#示例-6" id="示例-6">示例</a></h2>
 <p>定义两个数据库操作，<code>建表</code>和<code>加字段</code>。每个操作都是一个命令，它知道如何撤销命令。例如，<code>删表</code>和<code>删字段</code>。当用户调用数据库迁移操作时，每条命令都会按照定义的顺序执行。而当用户调用回滚操作时，整个命令集会以相反的顺序调用。</p>
 <h2><a class="header" href="#使用trait对象" id="使用trait对象">使用trait对象</a></h2>
 <p>我们定义了一个trait，将我们的命令封装成两个操作，<code>execute</code>和<code>rollback</code>。所有命令<code>结构体</code>必须实现这个trait。</p>
@@ -1289,7 +1464,7 @@ fn main() {
     assert_eq!(vec![&quot;remove field&quot;, &quot;drop table&quot;], schema.rollback());
 }
 </code></pre></pre>
-<h2><a class="header" href="#讨论-6" id="讨论-6">讨论</a></h2>
+<h2><a class="header" href="#讨论-5" id="讨论-5">讨论</a></h2>
 <p>如果我们的命令很小，可以定义成函数，或作为闭包传递，那么使用函数指针可能更好，
 因为它不需要动态分发。但如果我们的命令是个完整的结构，
 有一堆函数和变量被分别定义为独立的模块，那么使用trait对象会更合适。
@@ -1310,7 +1485,7 @@ fn main() {
 <h1><a class="header" href="#生成器" id="生成器">生成器</a></h1>
 <h2><a class="header" href="#说明-17" id="说明-17">说明</a></h2>
 <p>通过调用生成器来构造对象。</p>
-<h2><a class="header" href="#示例-6" id="示例-6">示例</a></h2>
+<h2><a class="header" href="#示例-7" id="示例-7">示例</a></h2>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -1375,7 +1550,7 @@ fn builder_test() {
 <p>即使构造器本身很复杂，也可以做到封装后一行初始化。</p>
 <h2><a class="header" href="#缺点-11" id="缺点-11">缺点</a></h2>
 <p>与直接构造一个结构体或者一个简单的构造函数相比，这种方法太复杂。</p>
-<h2><a class="header" href="#讨论-7" id="讨论-7">讨论</a></h2>
+<h2><a class="header" href="#讨论-6" id="讨论-6">讨论</a></h2>
 <p>因为Rust缺少重载功能，所以这种模式在Rust里比其他语言更常见。由于一个方法一个名称不能重载，所以Rust相比于C++、Java来说更不适合写很多构造器。</p>
 <p>这种模式经常不是为了作为构造器而设计。例如<a href="https://doc.rust-lang.org/std/process/struct.Command.html"><code>std::process::Command</code></a>
 是 <a href="https://doc.rust-lang.org/std/process/struct.Child.html"><code>Child</code></a>的构造器（一个进程）。这种情况下没有使用<code>T</code>和<code>TBuilder</code>命名模式。</p>
@@ -1399,7 +1574,7 @@ implementing this pattern while avoiding the boilerplate.</li>
 <h2><a class="header" href="#说明-18" id="说明-18">说明</a></h2>
 <p>有时候一个很大的结构体会在借用的时候产生问题——当有多个可变借用（每个只改变其中一部分字段）的时候会相互冲突。解决方法是将这个大结构体分解成更小的结构体，然后再把这些小结构组装成大结构体，这样结构体中的每个部分都可以单独的借用。</p>
 <p>这通常在其他方面带来更好的设计：用这种模式可以展露出更小的功能模块。</p>
-<h2><a class="header" href="#示例-7" id="示例-7">示例</a></h2>
+<h2><a class="header" href="#示例-8" id="示例-8">示例</a></h2>
 <p>下面是一个设计出的借用检查器会阻止我们使用结构体的示例：</p>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
@@ -1459,7 +1634,7 @@ fn baz(a: &amp;mut A) {
 <h2><a class="header" href="#缺点-12" id="缺点-12">缺点</a></h2>
 <p>需要更多的代码。</p>
 <p>有时更小的结构体没有明确的抽象意义，最终导致做出坏设计。这种情况是一种“代码气味”（code smell），表明程序需要重构。</p>
-<h2><a class="header" href="#讨论-8" id="讨论-8">讨论</a></h2>
+<h2><a class="header" href="#讨论-7" id="讨论-7">讨论</a></h2>
 <p>在没有借用检查器的语言里中是不需要这种模式的，所以它是Rust独有的设计模式。不过，将功能分解成更小的单元是很多有名的软件设计原则中都赞同的，这一点与语言无关。</p>
 <p>这种模式依赖于Rust的借用检查器能够分清结构体内部的字段。在上面的例子中，借用检查器知道<code>a.b</code>和<code>a.c</code>是相互独立的，就不会尝试去借用整个<code>a</code>。</p>
 <h1><a class="header" href="#外部语言接口使用" id="外部语言接口使用">外部语言接口使用</a></h1>
@@ -1768,7 +1943,7 @@ impl Folder for Renamer {
 <h2><a class="header" href="#出发点-11" id="出发点-11">出发点</a></h2>
 <p>通过对数据结构中的每个节点执行一些操作来映射一个数据结构是常见的。对于简单结构上的简单操作，可以用<code>Iterator::map</code>来实现。对于更复杂的操作，或者前面的节点会影响后面节点的操作，或者数据结构上的循环是非平凡的，用fold模式更为妥帖。</p>
 <p>类似访问者模式，fold模式允许我们将数据结构的遍历与对每个节点执行的操作分开。</p>
-<h2><a class="header" href="#讨论-9" id="讨论-9">讨论</a></h2>
+<h2><a class="header" href="#讨论-8" id="讨论-8">讨论</a></h2>
 <p>采用这种方式映射数据结构在函数式语言中很常见。在面向对象语言中，更常见的是就地修改数据结构。Rust中常见的是&quot;函数式&quot;的方法，主要是因为引用的不可变性。
 采用新生成数据结构而不是修改原来的结构，使在大多数情况下对代码推理更容易。</p>
 <p>效率和可重用性之间的权衡可以通过改变<code>fold_*</code>方法对节点的接受方式来调整。</p>
@@ -1848,7 +2023,7 @@ pub fn main() {
     assert_eq!(postfix, &quot;12-3+4-&quot;);
 }
 </code></pre></pre>
-<h2><a class="header" href="#讨论-10" id="讨论-10">讨论</a></h2>
+<h2><a class="header" href="#讨论-9" id="讨论-9">讨论</a></h2>
 <p>可能有一种错误的看法，即解释器设计模式是关于形式语言的语法设计和语法分析器的实现。事实上，这个模式是用更具体的方式表达问题实例，并实现解决这些问题实例的函数/类/结构。Rust语言有<code>macro_rules!</code>支持定义特殊语法和如何展开这种语法为源代码的规则。</p>
 <p>在下面的例子中我们创建了一个简单的宏来计算n维向量的<a href="https://en.wikipedia.org/wiki/Euclidean_distance">欧式长度</a>。写<code>norm!(x,1,2)</code>也许比打包<code>x,1,2</code>到<code>Vec</code>中然后调用函数计算要更有表达力和效率。</p>
 <pre><pre class="playground"><code class="language-rust edition2018">macro_rules! norm {
@@ -1871,7 +2046,7 @@ fn main() {
     assert_eq!(1f64, norm!(0.5, -0.5, 0.5, -0.5));
 }
 </code></pre></pre>
-<h2><a class="header" href="#see-also" id="see-also">See also</a></h2>
+<h2><a class="header" href="#see-also-1" id="see-also-1">See also</a></h2>
 <ul>
 <li><a href="https://en.wikipedia.org/wiki/Interpreter_pattern">解释器模式</a></li>
 <li><a href="https://en.wikipedia.org/wiki/Context-free_grammar">上下文无关文法</a></li>
@@ -1927,7 +2102,7 @@ fn main() {
 <p>隐私系统确保用户不能访问包装的类型（如果字段是私有的，默认私有）。</p>
 <h2><a class="header" href="#缺点-15" id="缺点-15">缺点</a></h2>
 <p>新类型的缺点（尤其是与类型别名比较），是没有特殊的语言支持。这就意味着会有大量的啰嗦的样板代码。对于要在包装类型上公开的每个方法，都需要一个穿透的方法，还有对包装器类型的实现来支持每一个想要的特性。</p>
-<h2><a class="header" href="#讨论-11" id="讨论-11">讨论</a></h2>
+<h2><a class="header" href="#讨论-10" id="讨论-10">讨论</a></h2>
 <p>在Rust代码中新类型模式是很常见的。抽象或表达单元是最常见的用法，但他们也可以用于其他原因：</p>
 <ul>
 <li>限制功能（减少暴露的函数或者特性实现），</li>
@@ -2009,7 +2184,7 @@ fn baz(x: Mutex&lt;Foo&gt;) {
 <p>当资源被使用后必须被销毁，RAII可以被用来实现确定性析构。如果在销毁后访问该资源是错误的，那么此模式可用于防止此类错误。</p>
 <h2><a class="header" href="#优点-16" id="优点-16">优点</a></h2>
 <p>防止使用未初始化资源和销毁后资源的错误。</p>
-<h2><a class="header" href="#讨论-12" id="讨论-12">讨论</a></h2>
+<h2><a class="header" href="#讨论-11" id="讨论-11">讨论</a></h2>
 <p>RAII是确保资源被合适地析构或确定的实用模式。我们可以在Rust中使用借用检查器静态地防止析构后发生使用资源的错误。</p>
 <p>借用检查器的核心目标是确保对数据的引用不能超过数据的生命周期。RAII守卫模式之所以有效，是因为守卫对象包含对底层资源的引用并且只暴露这样的引用。Rust确保了守卫不能比底层资源活的更长，并且由守卫控制的对资源的引用不能比守卫获得更长。要了解这是如何工作的，最好检查<code>deref</code>的签名不进行生命周期省略。</p>
 <pre><code class="language-rust ignore">fn deref&lt;'a&gt;(&amp;'a self) -&gt; &amp;'a T {
@@ -2040,11 +2215,11 @@ fn baz(x: Mutex&lt;Foo&gt;) {
 <li>在crates.io上的包时没有策划的。一个库可能写的不好，只有没有帮助的文档，或者是彻头彻尾的恶意代码。</li>
 <li>两个小库可能比一个大的库的优化要更少，因为编译器默认没有开启链接时优化。</li>
 </ul>
-<h2><a class="header" href="#示例-8" id="示例-8">示例</a></h2>
+<h2><a class="header" href="#示例-9" id="示例-9">示例</a></h2>
 <p><code>ref_slice</code>库提供转换<code>&amp;T</code>为<code>&amp;[T]</code>的函数。</p>
 <p><code>url</code>库提供处理URL的工具。</p>
 <p><code>num_cpus</code>库提供一个函数来查询机器上的CPU数量。</p>
-<h2><a class="header" href="#see-also-1" id="see-also-1">See also</a></h2>
+<h2><a class="header" href="#see-also-2" id="see-also-2">See also</a></h2>
 <ul>
 <li><a href="https://crates.io/">crates.io: The Rust community crate host</a></li>
 </ul>
@@ -2119,7 +2294,7 @@ fn main() {
 <p>主要的优点是分离关注点。举例来说，在这个例子里<code>Report</code>并不知道<code>Json</code>和<code>Text</code>的特定实现，尽管输出的实现并不关心数据是如何被预处理、存储和抓取的。它仅仅需要知道上下文和需要实现的特定的特性和方法，就像<code>Formatter</code>和<code>run</code>。</p>
 <h2><a class="header" href="#缺点-17" id="缺点-17">缺点</a></h2>
 <p>对于每个策略，必须至少实现一个模块，因此模块的数量会随着策略数量增加。如果有很多策略可供选择，那么用户就必须知道策略之间的区别。</p>
-<h2><a class="header" href="#讨论-13" id="讨论-13">讨论</a></h2>
+<h2><a class="header" href="#讨论-12" id="讨论-12">讨论</a></h2>
 <p>在前面的例子中所有的策略实现都在一个文件中。提供不同策略的方式包括：</p>
 <ul>
 <li>所有都在一个文件中（如本例所示，类似于被分离为模块）</li>
@@ -2168,7 +2343,7 @@ fn main() {
     assert_eq!(82, val.map(first_byte_strategy).unwrap());
 }
 </code></pre></pre>
-<h2><a class="header" href="#see-also-2" id="see-also-2">See also</a></h2>
+<h2><a class="header" href="#see-also-3" id="see-also-3">See also</a></h2>
 <ul>
 <li><a href="https://en.wikipedia.org/wiki/Strategy_pattern">策略模式</a></li>
 <li><a href="https://en.wikipedia.org/wiki/Dependency_injection">依赖注入</a></li>
@@ -2187,7 +2362,7 @@ fn main() {
 <li>有时，找一个合适的接口是很困难的。</li>
 <li>抽象可能会降低效率。</li>
 </ul>
-<h2><a class="header" href="#示例-9" id="示例-9">示例</a></h2>
+<h2><a class="header" href="#示例-10" id="示例-10">示例</a></h2>
 <ul>
 <li><a href="https://docs.rs/toolshed"><code>toolshed</code></a>库将不安全操作放在了子模块中，提供了安全的接口给用户。<code>std</code>的<code>String</code>类是利用<code>Vec&lt;u8&gt;</code>封装加上内容必须是合法的UTF-8编码。<code>String</code>上的操作确保了这种行为。不过，用户也可以用不安全的方法来创建一个<code>String</code>，在这种情况下用户有责任保证内容的有效性。</li>
 </ul>
@@ -2255,7 +2430,7 @@ impl Visitor&lt;i64&gt; for Interpreter {
 <p>可以实现更多的访问者，例如类型检查器，而不必修改AST数据。</p>
 <h2><a class="header" href="#出发点-16" id="出发点-16">出发点</a></h2>
 <p>当你想要讲一个算法用于不同数据的时候，访问器模式是很有用的。如果数据是相同种类的，你可以用一个类似迭代器模式。使用访问者对象（而不是函数式的方法）支持访问者带有状态，从而在节点之间传递信息。</p>
-<h2><a class="header" href="#讨论-14" id="讨论-14">讨论</a></h2>
+<h2><a class="header" href="#讨论-13" id="讨论-13">讨论</a></h2>
 <p><code>visit_*</code>通常返回空值（与示例中的相反）。在这种情况下，可以将遍历代码分解出来并在算法之间共享。（并且提供空的默认方法）。在Rust中，通常的方法是对每种数据提供一个<code>walk_*</code>函数，例如：</p>
 <pre><code class="language-rust ignore">pub fn walk_expr(visitor: &amp;mut Visitor, e: &amp;Expr) {
     match *e {
@@ -2281,7 +2456,7 @@ impl Visitor&lt;i64&gt; for Interpreter {
 <h1><a class="header" href="#clone过借用检查" id="clone过借用检查">Clone过借用检查</a></h1>
 <h2><a class="header" href="#说明-29" id="说明-29">说明</a></h2>
 <p>借用检查阻止了Rust用户开发不安全的代码，以此保证：只存在一个可变引用，或者（许多）不可变引用。如果编写的代码不符合这些条件，而开发者通过克隆变量来解决编译器错误，就会产生这种反模式。</p>
-<h2><a class="header" href="#示例-10" id="示例-10">示例</a></h2>
+<h2><a class="header" href="#示例-11" id="示例-11">示例</a></h2>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -2321,7 +2496,7 @@ println!(&quot;{}&quot;, x);
 <h1><a class="header" href="#denywarnings" id="denywarnings"><code>#![deny(warnings)]</code></a></h1>
 <h2><a class="header" href="#说明-30" id="说明-30">说明</a></h2>
 <p>一个善意的库作者想要确保他们的代码在编译时不会产生警告。因此他们在库里标注以下内容：</p>
-<h2><a class="header" href="#示例-11" id="示例-11">示例</a></h2>
+<h2><a class="header" href="#示例-12" id="示例-12">示例</a></h2>
 <pre><pre class="playground"><code class="language-rust edition2018">
 <span class="boring">#![allow(unused)]
 </span>#![deny(warnings)]
@@ -2439,7 +2614,7 @@ fn main() {
 <p>这种模式并没有实现像Java或者C++里的继承。此外，对<code>Foo</code>实现的特性也不会自动地适用于<code>Boo</code>，所以这种模式对于边界检查和泛型编程来说非常差。</p>
 <p>使用这种模式，就<code>self</code>而言，给出了与大多数面向对象语言截然不同的语义。通常它仍是子类型的引用，在这种模式下它将是定义方法的“类”。</p>
 <p>最后，这种模式仅支持单继承，并且没有接口的概念、基于类的隐私性或者其他的与继承相关的特性。因此，对于习惯于Java那种继承的程序员来说，它提供了一种“惊喜”。</p>
-<h2><a class="header" href="#讨论-15" id="讨论-15">讨论</a></h2>
+<h2><a class="header" href="#讨论-14" id="讨论-14">讨论</a></h2>
 <p>这没有好的替代方案。根据具体情况，最好用特性重新实现，或者手动编写分发给<code>Foo</code>的方法。我们确实打算为Rust添加一种像这样的继承机制，
 但是可能需要一段时间才能进入稳定版本的Rust。看这些 <a href="http://aturon.github.io/blog/2015/09/18/reuse/">博客</a>、
 <a href="http://smallcultfollowing.com/babysteps/blog/2015/10/08/virtual-structs-part-4-extended-enums-and-thin-traits/">文章</a>
@@ -2515,7 +2690,7 @@ println!(&quot;{}&quot;, sum);
 <p>这被称作<strong>单态化</strong>，不同类型以<strong>多态</strong>代码创建。这种特殊行为需要用<code>impl</code>块指定泛型参数：泛型的不同值会导致不同的类型，而不同的类型可以有不同的<code>impl</code>块。</p>
 <p>在面向对象语言中，类可以从父类那里继承行为。实际上，这不仅允许将额外的行为附加到类型类的特定成员上，还允许附加额外的行为。</p>
 <p>最接近的是Javascript和Python中的运行时多态性，新的成员可以被任何构造函数随意添加到对象中。然而，与这些语言不同，Rust的所有额外方法在使用时都可以进行类型检查，因为它们的泛型是静态定义的。这使得它们在保持安全的同时更具有实用性。</p>
-<h2><a class="header" href="#示例-12" id="示例-12">示例</a></h2>
+<h2><a class="header" href="#示例-13" id="示例-13">示例</a></h2>
 <p>想象你正在为实验室机器集群设计存储服务器。因为涉及的软件，有两个不同的协议需要你支持。BOOTP（用于PXE网络启动），和NFS（用于远程安装存储）。</p>
 <p>你的目标是一个用Rust编写的程序，它可以处理这两种请求。它将有协议handler，监听两种请求。此外，主应用逻辑要允许实验室管理员配置实际文件的存储和安全控制。</p>
 <p>不管来自什么协议，实验室机器对文件的请求都包含相同的基本信息：一个认证方法，和一个要检索的文件名。一个直接的实现会是这样的：</p>
