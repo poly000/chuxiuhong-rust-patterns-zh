@@ -5,7 +5,7 @@
   - [以借用类型为参数](./idioms/coercion-arguments.md)
   - [用format!连接字符串](./idioms/concat-format.md)
   - [构造器](./idioms/ctor.md)
-  - [Default 特性](./idioms/default.md)
+  - [Default 特质](./idioms/default.md)
   - [将集合视为智能指针](./idioms/deref.md)
   - [确定性析构](./idioms/dtor-finally.md)
   - [`mem::{take(_), replace(_)}`](./idioms/mem-replace.md)

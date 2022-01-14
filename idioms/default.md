@@ -1,4 +1,4 @@
-# `Default` 特性
+# `Default` 特质
 
 ## 说明
 

@@ -34,7 +34,7 @@ impl Second {
 
 ## Default Constructors
 
-Rust supports default constructors with the [`Default`][std-default] trait:
+Rust以 [`Default`][std-default] trait 支持默认构造器：
 
 ```rust,ignore
 // A Rust vector, see liballoc/vec.rs
@@ -60,15 +60,14 @@ impl Second {
     }
 }
 impl<T> Vec<T> {
-    // Constructs a new, empty `Vec<T>`.
-    // Note this is a static method - no self.
-    // This constructor doesn't take any arguments, but some might in order to
-    // properly initialise an object
-    pub fn new() -> Vec<T> {
+    // 构造一个新的 `Vec<T>`.
+    // 注意这是一个静态方法
+    // 这个构造器不需要任何参数，但有些需要参数来初始化对象
+	pub fn new() -> Vec<T> {
         // Create a new Vec with fields properly initialised.
         Vec {
-            // Note that here we are calling RawVec's constructor.
-            buf: RawVec::new(),
+            // 注意我们这里调用的是RawVec类型的构造器
+			buf: RawVec::new(),
             len: 0,
         }
 impl Default for Second {
@@ -114,6 +113,6 @@ any of the [`*or_default` functions in the standard library][std-or-default].
 - [default idiom](default.md)有对`Default` trait更深入的介绍。
 - [生成器模式](../patterns/creational/builder.md)用于有多种构造对象方式的情况。
 
-[associated function]: https://doc.rust-lang.org/stable/book/ch05-03-method-syntax.html#associated-functions
+[关联函数]: https://doc.rust-lang.org/stable/book/ch05-03-method-syntax.html#associated-functions
 [std-default]: https://doc.rust-lang.org/stable/std/default/trait.Default.html
 [std-or-default]: https://doc.rust-lang.org/stable/std/?search=or_default
